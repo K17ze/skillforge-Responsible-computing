@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useSkills } from '../App';
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────
 const C = {
@@ -13,38 +15,54 @@ const C = {
   white: '#FFFFFF',
 };
 
-// Muted editorial badge colors (desaturated for clean look)
 const PRIORITY_MAP = {
-  High:   { dot: '#B85C50', label: '#B85C50', bg: '#F5E8E6' },
+  High: { dot: '#B85C50', label: '#B85C50', bg: '#F5E8E6' },
   Medium: { dot: '#B08040', label: '#B08040', bg: '#F5EDDF' },
-  Low:    { dot: '#5A8A6A', label: '#5A8A6A', bg: '#E6F0E9' },
+  Low: { dot: '#5A8A6A', label: '#5A8A6A', bg: '#E6F0E9' },
 };
 
 const STATUS_MAP = {
-  Advanced:     '#5A8A6A',
+  Advanced: '#5A8A6A',
   'In Progress': C.accent,
-  Beginner:     '#B08040',
+  Beginner: '#B08040',
   'Just Started': C.muted,
 };
 
-export default function SkillCard({ skill }) {
+export default function SkillCard({ skill, onLongPress }) {
+  const navigation = useNavigation();
+  const { skills } = useSkills();
+
   const handlePress = () => {
-    Alert.alert(
-      skill.name,
-      `Category: ${skill.category}\nProgress: ${skill.progress}%\nStatus: ${skill.status}\nPriority: ${skill.priority}\n\nNext milestone:\n${skill.nextMilestone}`,
-      [{ text: 'Close' }]
-    );
+    navigation.navigate('SkillDetail', { skillId: skill.id });
   };
 
   const pm = PRIORITY_MAP[skill.priority] || { dot: C.muted, label: C.muted, bg: C.cardBg };
   const statusColor = STATUS_MAP[skill.status] || C.muted;
 
+  // Check if any dependency is incomplete
+  const hasIncompleteDep =
+    skill.dependencies &&
+    skill.dependencies.length > 0 &&
+    skill.dependencies.some((depId) => {
+      const dep = skills.find((s) => s.id === depId);
+      return dep && dep.progress < 75;
+    });
+
   return (
-    <TouchableOpacity style={styles.card} onPress={handlePress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={handlePress}
+      onLongPress={onLongPress}
+      activeOpacity={0.7}
+      delayLongPress={400}
+    >
       {/* Header row */}
       <View style={styles.headerRow}>
         <View style={styles.nameBlock}>
-          <Text style={styles.name}>{skill.name}</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.name}>{skill.name}</Text>
+            {hasIncompleteDep && <Text style={styles.depWarning}>⚠️</Text>}
+          </View>
           <Text style={styles.category}>{skill.category}</Text>
         </View>
         <View style={[styles.priorityPill, { backgroundColor: pm.bg }]}>
@@ -97,11 +115,19 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   name: {
     fontSize: 18,
     fontWeight: '600',
     color: C.bgDark,
     letterSpacing: -0.2,
+  },
+  depWarning: {
+    fontSize: 14,
   },
   category: {
     fontSize: 11,

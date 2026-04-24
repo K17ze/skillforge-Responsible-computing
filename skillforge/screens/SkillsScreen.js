@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,13 @@ import {
   TouchableOpacity,
   StatusBar,
   SafeAreaView,
+  RefreshControl,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
+import { useSkills } from '../App';
 import SkillCard from '../components/SkillCard';
+import FilterBar from '../components/FilterBar';
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -25,68 +30,84 @@ const C = {
   warn: '#B08040',
 };
 
-const SKILLS_DATA = [
-  {
-    id: '1',
-    name: 'React Native',
-    category: 'Mobile Dev',
-    progress: 65,
-    status: 'In Progress',
-    priority: 'High',
-    nextMilestone: 'Build navigation flows',
-  },
-  {
-    id: '2',
-    name: 'Python',
-    category: 'Backend',
-    progress: 80,
-    status: 'Advanced',
-    priority: 'Medium',
-    nextMilestone: 'Complete FastAPI project',
-  },
-  {
-    id: '3',
-    name: 'UI/UX Design',
-    category: 'Design',
-    progress: 40,
-    status: 'In Progress',
-    priority: 'High',
-    nextMilestone: 'Finish wireframing module',
-  },
-  {
-    id: '4',
-    name: 'Node.js',
-    category: 'Backend',
-    progress: 55,
-    status: 'In Progress',
-    priority: 'Medium',
-    nextMilestone: 'Build REST API',
-  },
-  {
-    id: '5',
-    name: 'TypeScript',
-    category: 'Frontend',
-    progress: 25,
-    status: 'Beginner',
-    priority: 'Low',
-    nextMilestone: 'Learn type annotations',
-  },
-  {
-    id: '6',
-    name: 'GraphQL',
-    category: 'API',
-    progress: 10,
-    status: 'Just Started',
-    priority: 'Low',
-    nextMilestone: 'Complete intro tutorial',
-  },
-];
+const PRIORITY_RANK = { High: 0, Medium: 1, Low: 2 };
 
 export default function SkillsScreen({ navigation }) {
-  const highPriorityCount = SKILLS_DATA.filter(s => s.priority === 'High').length;
-  const avgProgress = Math.round(
-    SKILLS_DATA.reduce((acc, s) => acc + s.progress, 0) / SKILLS_DATA.length
-  );
+  const { skills, loading, deleteSkill } = useSkills();
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [sortMode, setSortMode] = useState('priority');
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 600);
+  }, []);
+
+  // Unique categories from skills
+  const categories = [...new Set(skills.map((s) => s.category))];
+
+  // Filter + sort logic
+  let displayed = [...skills];
+  if (activeFilter !== 'All') {
+    displayed = displayed.filter((s) => s.category === activeFilter);
+  }
+  switch (sortMode) {
+    case 'priority':
+      displayed.sort((a, b) => (PRIORITY_RANK[a.priority] ?? 3) - (PRIORITY_RANK[b.priority] ?? 3));
+      break;
+    case 'progress_asc':
+      displayed.sort((a, b) => a.progress - b.progress);
+      break;
+    case 'progress_desc':
+      displayed.sort((a, b) => b.progress - a.progress);
+      break;
+    case 'alpha':
+      displayed.sort((a, b) => a.name.localeCompare(b.name));
+      break;
+    case 'recent':
+      displayed.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      break;
+  }
+
+  // Dynamic stats
+  const highPriorityCount = skills.filter((s) => s.priority === 'High').length;
+  const inProgressCount = skills.filter((s) => s.status === 'In Progress').length;
+  const advancedCount = skills.filter((s) => s.status === 'Advanced').length;
+  const avgProgress =
+    skills.length > 0
+      ? Math.round(skills.reduce((acc, s) => acc + s.progress, 0) / skills.length)
+      : 0;
+
+  // Long-press handler
+  const handleLongPress = (skill) => {
+    Alert.alert(skill.name, 'Choose an action', [
+      {
+        text: 'Edit',
+        onPress: () => navigation.navigate('SkillDetail', { skillId: skill.id }),
+      },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          Alert.alert('Delete Skill', `Remove "${skill.name}" from your roadmap?`, [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Delete', style: 'destructive', onPress: () => deleteSkill(skill.id) },
+          ]);
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={C.accent} />
+        <Text style={{ color: C.muted, marginTop: 12 }}>Loading your skills…</Text>
+      </SafeAreaView>
+    );
+  }
 
   const renderHeader = () => (
     <>
@@ -100,9 +121,8 @@ export default function SkillsScreen({ navigation }) {
       <View style={styles.heroRow}>
         <View style={styles.heroLeft}>
           <Text style={styles.heroTitle}>Skills</Text>
-          <Text style={styles.heroSubtitle}>{SKILLS_DATA.length} tracked</Text>
+          <Text style={styles.heroSubtitle}>{skills.length} tracked</Text>
         </View>
-        {/* Circular avg progress badge */}
         <View style={styles.avgCircle}>
           <Text style={styles.avgValue}>{avgProgress}%</Text>
           <Text style={styles.avgLabel}>avg</Text>
@@ -113,18 +133,19 @@ export default function SkillsScreen({ navigation }) {
       <View style={styles.statsStrip}>
         <StatItem value={highPriorityCount} label="High Priority" color={C.danger} />
         <View style={styles.statDivider} />
-        <StatItem
-          value={SKILLS_DATA.filter(s => s.status === 'In Progress').length}
-          label="In Progress"
-          color={C.accent}
-        />
+        <StatItem value={inProgressCount} label="In Progress" color={C.accent} />
         <View style={styles.statDivider} />
-        <StatItem
-          value={SKILLS_DATA.filter(s => s.status === 'Advanced').length}
-          label="Advanced"
-          color={C.success}
-        />
+        <StatItem value={advancedCount} label="Advanced" color={C.success} />
       </View>
+
+      {/* Filter bar */}
+      <FilterBar
+        categories={categories}
+        activeFilter={activeFilter}
+        onFilterChange={setActiveFilter}
+        sortMode={sortMode}
+        onSortChange={setSortMode}
+      />
 
       {/* Section label */}
       <View style={styles.sectionLabelRow}>
@@ -134,16 +155,49 @@ export default function SkillsScreen({ navigation }) {
     </>
   );
 
+  const renderEmpty = () => (
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyIcon}>📭</Text>
+      <Text style={styles.emptyTitle}>No skills found</Text>
+      <Text style={styles.emptySub}>
+        {activeFilter !== 'All'
+          ? `No skills in "${activeFilter}". Try a different filter.`
+          : 'Start building your roadmap by adding your first skill.'}
+      </Text>
+      <TouchableOpacity
+        style={styles.emptyBtn}
+        onPress={() => navigation.navigate('AddSkill')}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.emptyBtnText}>+ Add Skill</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
       <FlatList
-        data={SKILLS_DATA}
+        data={displayed}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <SkillCard skill={item} />}
+        renderItem={({ item }) => (
+          <SkillCard
+            skill={item}
+            onLongPress={() => handleLongPress(item)}
+          />
+        )}
         ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={C.accent}
+            colors={[C.accent]}
+          />
+        }
       />
 
       {/* FAB */}
@@ -246,7 +300,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 18,
     paddingHorizontal: 20,
-    marginBottom: 24,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: C.border,
   },
@@ -306,5 +360,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     letterSpacing: 0.8,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
+  emptyIcon: {
+    fontSize: 40,
+    marginBottom: 12,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: C.bgDark,
+    marginBottom: 6,
+  },
+  emptySub: {
+    fontSize: 13,
+    color: C.muted,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  emptyBtn: {
+    backgroundColor: C.bgDark,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 100,
+  },
+  emptyBtnText: {
+    color: C.white,
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: 0.5,
   },
 });

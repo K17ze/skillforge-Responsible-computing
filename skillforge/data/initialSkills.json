@@ -1,0 +1,109 @@
+[
+  {
+    "id": "1",
+    "name": "React Native",
+    "category": "Mobile Dev",
+    "progress": 65,
+    "status": "In Progress",
+    "priority": "High",
+    "nextMilestone": "Build navigation flows",
+    "milestones": [
+      { "id": "m1", "text": "Setup Expo project", "completed": true },
+      { "id": "m2", "text": "Build navigation flows", "completed": false },
+      { "id": "m3", "text": "Implement AsyncStorage", "completed": false },
+      { "id": "m4", "text": "Add gesture handling", "completed": false }
+    ],
+    "notes": "",
+    "level": "Intermediate",
+    "createdAt": "2026-01-15T00:00:00Z",
+    "dependencies": []
+  },
+  {
+    "id": "2",
+    "name": "Python",
+    "category": "Backend",
+    "progress": 80,
+    "status": "Advanced",
+    "priority": "Medium",
+    "nextMilestone": "Complete FastAPI project",
+    "milestones": [
+      { "id": "m1", "text": "Learn syntax basics", "completed": true },
+      { "id": "m2", "text": "Build CLI tools", "completed": true },
+      { "id": "m3", "text": "Complete FastAPI project", "completed": false }
+    ],
+    "notes": "",
+    "level": "Advanced",
+    "createdAt": "2025-11-01T00:00:00Z",
+    "dependencies": []
+  },
+  {
+    "id": "3",
+    "name": "UI/UX Design",
+    "category": "Design",
+    "progress": 40,
+    "status": "In Progress",
+    "priority": "High",
+    "nextMilestone": "Finish wireframing module",
+    "milestones": [
+      { "id": "m1", "text": "Study design principles", "completed": true },
+      { "id": "m2", "text": "Finish wireframing module", "completed": false },
+      { "id": "m3", "text": "Build a case study", "completed": false }
+    ],
+    "notes": "",
+    "level": "Some Exposure",
+    "createdAt": "2026-02-10T00:00:00Z",
+    "dependencies": []
+  },
+  {
+    "id": "4",
+    "name": "Node.js",
+    "category": "Backend",
+    "progress": 55,
+    "status": "In Progress",
+    "priority": "Medium",
+    "nextMilestone": "Build REST API",
+    "milestones": [
+      { "id": "m1", "text": "Understand event loop", "completed": true },
+      { "id": "m2", "text": "Build REST API", "completed": false },
+      { "id": "m3", "text": "Deploy to production", "completed": false }
+    ],
+    "notes": "",
+    "level": "Intermediate",
+    "createdAt": "2026-01-20T00:00:00Z",
+    "dependencies": ["2"]
+  },
+  {
+    "id": "5",
+    "name": "TypeScript",
+    "category": "Frontend",
+    "progress": 25,
+    "status": "Beginner",
+    "priority": "Low",
+    "nextMilestone": "Learn type annotations",
+    "milestones": [
+      { "id": "m1", "text": "Learn type annotations", "completed": false },
+      { "id": "m2", "text": "Convert a JS project", "completed": false }
+    ],
+    "notes": "",
+    "level": "Complete Beginner",
+    "createdAt": "2026-03-01T00:00:00Z",
+    "dependencies": []
+  },
+  {
+    "id": "6",
+    "name": "GraphQL",
+    "category": "API",
+    "progress": 10,
+    "status": "Just Started",
+    "priority": "Low",
+    "nextMilestone": "Complete intro tutorial",
+    "milestones": [
+      { "id": "m1", "text": "Complete intro tutorial", "completed": false },
+      { "id": "m2", "text": "Build a schema", "completed": false }
+    ],
+    "notes": "",
+    "level": "Complete Beginner",
+    "createdAt": "2026-03-10T00:00:00Z",
+    "dependencies": ["4"]
+  }
+]
