@@ -22,7 +22,7 @@ const PCOL = {
 };
 
 export default function AddSkillScreen({ navigation }) {
-  const { addSkill } = useSkills();
+  const { skills, addSkill } = useSkills();
   const [skillName, setSkillName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedPriority, setSelectedPriority] = useState('');
@@ -30,12 +30,21 @@ export default function AddSkillScreen({ navigation }) {
   const [notes, setNotes] = useState('');
   const [milestones, setMilestones] = useState([]);
   const [milestoneInput, setMilestoneInput] = useState('');
+  const [selectedDependencies, setSelectedDependencies] = useState([]);
 
   const handleAddMilestone = () => {
     const t = milestoneInput.trim();
     if (!t) return;
     setMilestones(p => [...p, {id:'m'+Date.now(), text:t, completed:false}]);
     setMilestoneInput('');
+  };
+
+  const toggleDependency = (id) => {
+    if (selectedDependencies.includes(id)) {
+      setSelectedDependencies(selectedDependencies.filter(dep => dep !== id));
+    } else {
+      setSelectedDependencies([...selectedDependencies, id]);
+    }
   };
 
   const handleSave = () => {
@@ -46,7 +55,7 @@ export default function AddSkillScreen({ navigation }) {
       priority: selectedPriority||'Medium', level: selectedLevel||'Complete Beginner',
       notes: notes.trim(), milestones, progress: 0, status: 'Just Started',
       nextMilestone: milestones.length>0 ? milestones[0].text : 'Set your first milestone',
-      createdAt: new Date().toISOString(), dependencies: [],
+      createdAt: new Date().toISOString(), dependencies: selectedDependencies,
     });
     navigation.navigate('Skills');
   };
@@ -109,6 +118,26 @@ export default function AddSkillScreen({ navigation }) {
             </TouchableOpacity>
           </View>
         </View>
+
+        {skills && skills.length > 0 && (
+          <>
+            <SectionLabel text="PREREQUISITES" />
+            <View style={s.chipWrap}>
+              {skills.map(skill => {
+                const isSelected = selectedDependencies.includes(skill.id);
+                return (
+                  <TouchableOpacity 
+                    key={skill.id} 
+                    style={[s.chip, isSelected && s.chipActive]} 
+                    onPress={() => toggleDependency(skill.id)}
+                  >
+                    <Text style={[s.chipText, isSelected && s.chipTextActive]}>{skill.name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
 
         <SectionLabel text="NOTES (OPTIONAL)" />
         <TextInput style={[s.input,s.textArea]} placeholder="Why do you want to learn this?" placeholderTextColor={C.muted} value={notes} onChangeText={setNotes} multiline numberOfLines={4} textAlignVertical="top" />

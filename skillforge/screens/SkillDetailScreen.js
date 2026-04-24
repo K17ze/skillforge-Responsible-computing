@@ -32,6 +32,7 @@ export default function SkillDetailScreen({ route, navigation }) {
   const [editCategory, setEditCategory] = useState('');
   const [editPriority, setEditPriority] = useState('');
   const [editLevel, setEditLevel] = useState('');
+  const [editDependencies, setEditDependencies] = useState([]);
 
   if (!skill) {
     return (
@@ -73,7 +74,16 @@ export default function SkillDetailScreen({ route, navigation }) {
     setEditCategory(skill.category);
     setEditPriority(skill.priority);
     setEditLevel(skill.level);
+    setEditDependencies(skill.dependencies || []);
     setIsEditing(true);
+  };
+
+  const toggleDependency = (id) => {
+    if (editDependencies.includes(id)) {
+      setEditDependencies(editDependencies.filter(dep => dep !== id));
+    } else {
+      setEditDependencies([...editDependencies, id]);
+    }
   };
 
   const saveEdit = () => {
@@ -83,9 +93,12 @@ export default function SkillDetailScreen({ route, navigation }) {
       category: editCategory || skill.category,
       priority: editPriority || skill.priority,
       level: editLevel || skill.level,
+      dependencies: editDependencies,
     });
     setIsEditing(false);
   };
+
+  const otherSkills = skills.filter(s => s.id !== skill.id);
 
   return (
     <SafeAreaView style={st.safe}>
@@ -127,6 +140,27 @@ export default function SkillDetailScreen({ route, navigation }) {
                 </TouchableOpacity>
               ))}
             </View>
+
+            {otherSkills.length > 0 && (
+              <>
+                <Text style={[st.editLabel,{marginTop:16}]}>PREREQUISITES</Text>
+                <View style={st.chipWrap}>
+                  {otherSkills.map(s => {
+                    const isSelected = editDependencies.includes(s.id);
+                    return (
+                      <TouchableOpacity 
+                        key={s.id} 
+                        style={[st.chip, isSelected && st.chipActive]} 
+                        onPress={() => toggleDependency(s.id)}
+                      >
+                        <Text style={[st.chipText, isSelected && st.chipTextActive]}>{s.name}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+
             <View style={st.editBtnRow}>
               <TouchableOpacity style={st.savEditBtn} onPress={saveEdit}><Text style={st.savEditBtnText}>Save</Text></TouchableOpacity>
               <TouchableOpacity style={st.cancelEditBtn} onPress={()=>setIsEditing(false)}><Text style={st.cancelEditBtnText}>Cancel</Text></TouchableOpacity>

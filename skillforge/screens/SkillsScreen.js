@@ -10,6 +10,7 @@ import {
   RefreshControl,
   Alert,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { useSkills } from '../App';
 import SkillCard from '../components/SkillCard';
@@ -36,6 +37,7 @@ export default function SkillsScreen({ navigation }) {
   const { skills, loading, deleteSkill } = useSkills();
   const [activeFilter, setActiveFilter] = useState('All');
   const [sortMode, setSortMode] = useState('priority');
+  const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
   // Pull-to-refresh handler
@@ -47,8 +49,12 @@ export default function SkillsScreen({ navigation }) {
   // Unique categories from skills
   const categories = [...new Set(skills.map((s) => s.category))];
 
-  // Filter + sort logic
+  // Filter + sort + search logic
   let displayed = [...skills];
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase();
+    displayed = displayed.filter((s) => s.name.toLowerCase().includes(q));
+  }
   if (activeFilter !== 'All') {
     displayed = displayed.filter((s) => s.category === activeFilter);
   }
@@ -89,14 +95,16 @@ export default function SkillsScreen({ navigation }) {
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => {
-          Alert.alert('Delete Skill', `Remove "${skill.name}" from your roadmap?`, [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Delete', style: 'destructive', onPress: () => deleteSkill(skill.id) },
-          ]);
-        },
+        onPress: () => handleDeleteWithConfirmation(skill),
       },
       { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const handleDeleteWithConfirmation = (skill) => {
+    Alert.alert('Delete Skill', `Remove "${skill.name}" from your roadmap?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteSkill(skill.id) },
     ]);
   };
 
@@ -138,6 +146,15 @@ export default function SkillsScreen({ navigation }) {
         <StatItem value={advancedCount} label="Advanced" color={C.success} />
       </View>
 
+      {/* Search Input */}
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search skills..."
+        placeholderTextColor={C.muted}
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
+
       {/* Filter bar */}
       <FilterBar
         categories={categories}
@@ -160,16 +177,19 @@ export default function SkillsScreen({ navigation }) {
       <Text style={styles.emptyIcon}>📭</Text>
       <Text style={styles.emptyTitle}>No skills found</Text>
       <Text style={styles.emptySub}>
-        {activeFilter !== 'All'
-          ? `No skills in "${activeFilter}". Try a different filter.`
+        {searchQuery || activeFilter !== 'All'
+          ? `No skills match your search/filter. Try clearing them.`
           : 'Start building your roadmap by adding your first skill.'}
       </Text>
       <TouchableOpacity
         style={styles.emptyBtn}
-        onPress={() => navigation.navigate('AddSkill')}
+        onPress={() => {
+          setSearchQuery('');
+          setActiveFilter('All');
+        }}
         activeOpacity={0.8}
       >
-        <Text style={styles.emptyBtnText}>+ Add Skill</Text>
+        <Text style={styles.emptyBtnText}>Clear Filters</Text>
       </TouchableOpacity>
     </View>
   );
@@ -184,6 +204,7 @@ export default function SkillsScreen({ navigation }) {
           <SkillCard
             skill={item}
             onLongPress={() => handleLongPress(item)}
+            onDelete={() => handleDeleteWithConfirmation(item)}
           />
         )}
         ListHeaderComponent={renderHeader}
@@ -303,6 +324,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderWidth: 1,
     borderColor: C.border,
+  },
+  searchInput: {
+    backgroundColor: C.cardBg,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 15,
+    color: C.bgDark,
+    marginBottom: 16,
   },
   statItem: {
     flex: 1,
