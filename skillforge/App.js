@@ -58,10 +58,6 @@ function SkillsProvider({ children }) {
     })();
   }, []);
 
-  const persist = useCallback((updated) => {
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated)).catch(() => {});
-  }, []);
-
   const addSkill = useCallback((skill) => {
     setSkills((prev) => {
       const enriched = recalcDerived(skill);
